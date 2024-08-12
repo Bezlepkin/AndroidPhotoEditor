@@ -26,7 +26,7 @@
                 android:layout_height="wrap_content"
                 android:layout_centerInParent="true"
                 android:adjustViewBounds="true"
-                android:contentDescription="@string/edited_image_description"
+                android:contentDescription="@string/image"
                 android:scaleType="centerCrop" />
 
             <com.bezlepkin.photoeditorsdk.BrushDrawingView
@@ -48,44 +48,52 @@
 
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="48dp"
+                android:layout_height="42dp"
                 android:orientation="horizontal">
 
                 <ImageButton
                     android:id="@+id/close_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:background="@drawable/round"
+                    android:contentDescription="@string/close"
+                    android:foreground="?attr/selectableItemBackground"
                     android:src="@drawable/ic_close" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="48dp"
+                android:layout_height="42dp"
                 android:layout_alignParentEnd="true"
                 android:orientation="horizontal">
 
                 <ImageButton
                     android:id="@+id/crop_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:background="@drawable/round"
+                    android:contentDescription="@string/crop"
+                    android:foreground="?attr/selectableItemBackground"
                     android:src="@drawable/ic_crop" />
 
                 <ImageButton
                     android:id="@+id/draw_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:layout_marginLeft="12dp"
                     android:background="@drawable/round"
+                    android:contentDescription="@string/draw"
+                    android:foreground="?attr/selectableItemBackground"
                     android:src="@drawable/ic_draw" />
 
                 <ImageButton
                     android:id="@+id/text_button"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:layout_marginLeft="12dp"
                     android:background="@drawable/round"
+                    android:contentDescription="@string/text"
+                    android:foreground="?attr/selectableItemBackground"
                     android:src="@drawable/ic_text" />
             </LinearLayout>
         </RelativeLayout>
@@ -121,9 +129,11 @@
 
             <ImageButton
                 android:id="@+id/cancel_button"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/round"
+                android:contentDescription="@string/cancel"
+                android:foreground="?attr/selectableItemBackground"
                 android:src="@drawable/ic_arrow_left" />
 
             <Space
@@ -133,9 +143,11 @@
 
             <ImageButton
                 android:id="@+id/apply_button"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/round_invert"
+                android:contentDescription="@string/apply"
+                android:foreground="?attr/selectableItemBackground"
                 android:src="@drawable/ic_check" />
         </LinearLayout>
 
@@ -149,14 +161,15 @@
 
             <ImageButton
                 android:id="@+id/share_button"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="42dp"
+                android:layout_height="42dp"
                 android:background="@drawable/round"
-                android:src="@drawable/ic_share"
-                android:contentDescription="TODO" />
+                android:contentDescription="@string/share"
+                android:foreground="?attr/selectableItemBackground"
+                android:src="@drawable/ic_share" />
 
             <Space
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1" />
 
@@ -166,7 +179,6 @@
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/primary"
                 android:text="@string/save" />
-
         </LinearLayout>
 
         <LinearLayout

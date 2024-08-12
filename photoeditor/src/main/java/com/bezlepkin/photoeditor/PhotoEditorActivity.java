@@ -43,7 +43,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-
 enum Mode {
     CROP,
     DRAW,
@@ -176,8 +175,6 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
                 if (activeMode == Mode.DRAW) {
                     saveDrawingResult();
                     updateDrawingMode(false);
-                } else if (activeMode == Mode.TEXT) {
-
                 }
             }
         });
@@ -204,7 +201,7 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
 
     @Override
     public void onEditTextChangeListener(String text, int color) {
-        // TODO: вызывает редактирование текста
+        // TODO: triggers text editing
         // openAddTextPopupWindow(text, color);
     }
 
@@ -284,7 +281,7 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
     private void beginCropping() {
         Intent intent = new Intent(this, PhotoCropperActivity.class);
         intent.putExtra("filepath", currentFilepath);
-        //noinspection deprecation
+        // noinspection deprecation
         startActivityForResult(intent, CROPPER_REQUEST_CODE);
     }
 
@@ -391,7 +388,6 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
     }
 
     private void saveAddedTextResult(String text, int color) {
-        Log.d(TAG, String.valueOf(color));
         photoEditorSDK.addText(text, color);
     }
 
