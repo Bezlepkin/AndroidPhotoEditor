@@ -2,6 +2,7 @@ package com.bezlepkin.photoeditor;
 
 import android.content.Context;
 import android.net.Uri;
+import android.os.Environment;
 import android.util.Log;
 
 import java.io.File;
@@ -45,7 +46,7 @@ public class Utils {
             sourceChannel.close();
             destinationChannel.close();
         } catch (IOException e) {
-            Log.d("GOVNO_EBANOE", e.getMessage());
+            Log.d("Error copy file: ", e.getMessage());
         }
     }
 }
