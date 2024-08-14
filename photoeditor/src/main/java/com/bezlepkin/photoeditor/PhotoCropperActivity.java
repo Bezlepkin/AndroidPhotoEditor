@@ -15,6 +15,7 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import com.bezlepkin.photoeditor.Utils;
 import com.canhub.cropper.CropImageView;
 
 import java.io.File;
@@ -33,7 +34,6 @@ public class PhotoCropperActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         // setting status bar and navigation bar color
         Window window = this.getWindow();
         window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -70,14 +70,14 @@ public class PhotoCropperActivity extends AppCompatActivity {
                 try {
                     Intent intent = new Intent();
                     Bitmap bitmap = cropImageView.getCroppedImage();
-                    String filepath = createTempFileUri().getPath();
-                    FileOutputStream out = new FileOutputStream(new File(filepath));
+                    File file = Utils.createTempFile(getApplicationContext());
+                    FileOutputStream out = new FileOutputStream(file);
 
                     if (bitmap != null) {
                         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
                         out.flush();
                         out.close();
-                        intent.putExtra("filepath", filepath);
+                        intent.putExtra("filepath", file.getAbsolutePath());
                     }
 
                     setResult(Activity.RESULT_OK, intent);
@@ -87,17 +87,5 @@ public class PhotoCropperActivity extends AppCompatActivity {
                 }
             }
         });
-    }
-
-    private Uri createTempFileUri() {
-        Uri tempFileUri;
-
-        try {
-            tempFileUri = Uri.fromFile(File.createTempFile("photo_editor_", ".jpg", getCacheDir()));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create temp file for output image", e);
-        }
-
-        return tempFileUri;
     }
 }

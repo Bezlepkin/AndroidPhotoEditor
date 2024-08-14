@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
             File file = createImageFile();
             filepath = file.getAbsolutePath();
             Uri fileURI = FileProvider.getUriForFile(this,
-                    "com.bezlepkin.android.fileprovider",
+                    BuildConfig.APPLICATION_ID + ".provider",
                     file);
             intent.putExtra(MediaStore.EXTRA_OUTPUT, fileURI);
             startActivityForResult(intent, REQUEST_CAMERA_CAPTURE);
@@ -95,11 +95,8 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_CAMERA_CAPTURE && resultCode == RESULT_OK) {
-            Log.d(TAG, filepath);
             Intent intent = new Intent(this, PhotoEditorActivity.class);
-
             intent.putExtra("imagePath", filepath);
-
             startActivity(intent);
         }
     }
@@ -108,7 +105,6 @@ public class MainActivity extends AppCompatActivity {
         // a standardized name for the photo so every photo taken by your app have it in common, plus the current time in milli second to make unique
         String filename = PHOTO_NAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
         File storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES);
-        Log.d(TAG, storageDir.getAbsolutePath());
 
         return File.createTempFile(filename, ".jpg", storageDir);
     }

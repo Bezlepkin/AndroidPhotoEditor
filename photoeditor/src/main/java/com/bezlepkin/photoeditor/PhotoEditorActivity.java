@@ -2,6 +2,7 @@ package com.bezlepkin.photoeditor;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -30,6 +31,7 @@ import androidx.activity.result.ActivityResultLauncher;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,7 +42,11 @@ import com.bezlepkin.photoeditorsdk.ViewType;
 
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 enum Mode {
@@ -51,6 +57,7 @@ enum Mode {
 
 public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEditorSDKListener {
     private Mode activeMode;
+    private File outputFile;
     int textColor = Color.WHITE;
     private String originFilepath;
     private String currentFilepath;
@@ -76,6 +83,7 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
     private ActivityResultLauncher cropActivityForResult;
 
     private final static int CROPPER_REQUEST_CODE = 1;
+    private final static String FILENAME_PREFIX = "photo_editor";
     private final String TAG = this.getClass().getSimpleName();
 
     @SuppressLint("MissingInflatedId")
@@ -189,7 +197,8 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                saveResultWithReturn();
+                // saveResultWithReturn();
+                saveResultWithReturn2();
             }
         });
     }
@@ -393,17 +402,22 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
 
     private void saveResultWithReturn() {
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+                RelativeLayout.LayoutParams.WRAP_CONTENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT
+        );
         layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
 
         imageWrapLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
             @Override
             public void onGlobalLayout() {
                 try {
+                    String filename = FILENAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
+                    File file = new File(getExternalFilesDir(null).getAbsolutePath(), filename + ".jpg");
+
                     Uri tempFileUri = Uri.fromFile(File.createTempFile("photo_editor_", ".jpg", getCacheDir()));
                     String[] filepathArr = tempFileUri.getPath().split("/");
-                    String filename = filepathArr[filepathArr.length - 1];
-                    String filepath = photoEditorSDK.saveImage("", filename);
+                    String filename2 = filepathArr[filepathArr.length - 1];
+                    String filepath = photoEditorSDK.saveImage("", filename2);
 
                     Intent intent = new Intent();
                     intent.putExtra("filepath", filepath);
@@ -420,16 +434,71 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
         imageWrapLayout.setLayoutParams(layoutParams);
     }
 
-    private void shareFile(String filepath) {
-        /*
-        Intent intent = new Intent();
-        intent.setAction(Intent.ACTION_SEND);
-        intent.putExtra(Intent.EXTRA_TEXT, "");
-        intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(new File(filepath)));
-        intent.setType("image/*");
+    private void saveResultWithReturn2() {
+        try {
+            if (outputFile == null) {
+                outputFile = Utils.createExternalFile(getApplicationContext());
+            }
+            Log.d(TAG, "___442 " + currentFilepath);
+            Log.d(TAG, "___443 " + outputFile.getAbsolutePath());
+            Utils.copyFile(new File(currentFilepath), outputFile);
+            Log.d(TAG, "____444 " + outputFile.getAbsolutePath());
+            Intent intent = new Intent();
+            intent.putExtra("filepath", outputFile.getAbsolutePath());
+            setResult(Activity.RESULT_OK, intent);
+            finish();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.d(TAG, "__449 " + e.getMessage());
+            // throw new RuntimeException(e);
+        }
+    }
 
-        Intent shareIntent = Intent.createChooser(intent, null);
-        startActivity(shareIntent);
-         */
+    private void shareFile(String filepath) {
+        try {
+            File file = Utils.createExternalTempFile(getApplicationContext());
+            FileOutputStream stream = new FileOutputStream(file);
+            Bitmap bitmap = BitmapFactory.decodeFile(filepath);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            stream.flush();
+            stream.close();
+
+            Context context = getApplicationContext();
+            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+
+            Intent intent = new Intent();
+            intent.setAction(Intent.ACTION_SEND);
+            intent.putExtra(Intent.EXTRA_STREAM, uri);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            intent.setType("image/*");
+
+            startActivity(Intent.createChooser(intent, "Share..."));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    private void createOutputFile() {
+        String filename = FILENAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
+        outputFile = new File(getExternalFilesDir(null).getAbsolutePath(), filename + ".jpg");
+        Log.d(TAG, "___482 " + outputFile);
+        // /storage/emulated/0/Android/data/com.bezlepkin.photoeditordemo/files/photo_editor_1723576640202.jpg
+
+    }
+
+    private File saveOutputImage(File outputFile) throws IOException {
+        try {
+            FileOutputStream stream = new FileOutputStream(outputFile);
+            Bitmap bitmap = BitmapFactory.decodeFile(currentFilepath);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
+            stream.flush();
+            stream.close();
+
+            return outputFile;
+        } catch (IOException e) {
+            Log.e(TAG, "Error saving an output image", e);
+            throw new IOException();
+        }
     }
 }
