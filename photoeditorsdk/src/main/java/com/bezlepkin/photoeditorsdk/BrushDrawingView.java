@@ -43,15 +43,15 @@ public class BrushDrawingView extends View {
 
     public BrushDrawingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        setupBrushDrawing();
+        initBrushDrawing();
     }
 
     public BrushDrawingView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        setupBrushDrawing();
+        initBrushDrawing();
     }
 
-    void setupBrushDrawing() {
+    void initBrushDrawing() {
         drawPath = new Path();
         drawPaint = new Paint();
         drawPaint.setAntiAlias(true);
@@ -87,7 +87,11 @@ public class BrushDrawingView extends View {
         if (brushDrawMode) {
             this.setVisibility(View.VISIBLE);
             refreshBrushDrawing();
+        } else {
+            this.setVisibility(View.GONE);
         }
+
+        refreshBrushDrawing();
     }
 
     void setBrushSize(float size) {
@@ -104,7 +108,7 @@ public class BrushDrawingView extends View {
         this.brushEraserSize = brushEraserSize;
     }
 
-    void setBrushEraserColor(@ColorInt int color){
+    void setBrushEraserColor(@ColorInt int color) {
         drawPaint.setColor(color);
         refreshBrushDrawing();
     }
@@ -151,28 +155,35 @@ public class BrushDrawingView extends View {
         if (brushDrawMode) {
             float touchX = event.getX();
             float touchY = event.getY();
+
             switch (event.getAction()) {
                 case MotionEvent.ACTION_DOWN:
                     drawPath.moveTo(touchX, touchY);
+
                     if (onPhotoEditorSDKListener != null)
                         onPhotoEditorSDKListener.onStartViewChangeListener(ViewType.BRUSH_DRAWING);
                     break;
+
                 case MotionEvent.ACTION_MOVE:
                     drawPath.lineTo(touchX, touchY);
                     break;
+
                 case MotionEvent.ACTION_UP:
                     drawCanvas.drawPath(drawPath, drawPaint);
                     drawPath.reset();
+
                     if (onPhotoEditorSDKListener != null)
                         onPhotoEditorSDKListener.onStopViewChangeListener(ViewType.BRUSH_DRAWING);
                     break;
+
                 default:
                     return false;
             }
+
             invalidate();
             return true;
-        } else {
-            return false;
         }
+
+        return false;
     }
 }

@@ -1,5 +1,6 @@
-package com.bezlepkin.photoeditor;
+package com.bezlepkin.photoeditor.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -7,6 +8,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LayerDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.OvalShape;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,12 +16,15 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bezlepkin.photoeditor.R;
+
 import java.util.List;
 
 public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.ViewHolder> {
     // private Context context;
     private final LayoutInflater inflater;
     private final List<Integer> colorPickerColors;
+    private int activeColorIndex = 0;
     private OnColorPickerClickListener onColorPickerClickListener;
 
     public ColorPickerAdapter(@NonNull Context context, @NonNull List<Integer> colorPickerColors) {
@@ -37,7 +42,11 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        buildColorPickerView(holder.colorPickerView, colorPickerColors.get(position));
+        if (position == activeColorIndex) {
+            buildActiveColorPickerView(holder.colorPickerView, colorPickerColors.get(position));
+        } else {
+            buildInactiveColorPickerView(holder.colorPickerView, colorPickerColors.get(position));
+        }
     }
 
     @Override
@@ -45,7 +54,27 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
         return colorPickerColors.size();
     }
 
-    private void buildColorPickerView(View view, int colorCode) {
+    private void buildActiveColorPickerView(View view, int colorCode) {
+        view.setVisibility(View.VISIBLE);
+        // bigger
+        ShapeDrawable middleCircle = new ShapeDrawable(new OvalShape());
+        middleCircle.setPadding(6, 6, 6, 6);
+        middleCircle.getPaint().setColor(colorCode);
+
+        ShapeDrawable biggerCircle = new ShapeDrawable(new OvalShape());
+        biggerCircle.setPadding(10, 10, 10, 10);
+        biggerCircle.getPaint().setColor(Color.BLACK);
+
+        ShapeDrawable smallerCircle = new ShapeDrawable(new OvalShape());
+        smallerCircle.getPaint().setColor(colorCode);
+
+        Drawable[] drawables = {middleCircle, biggerCircle, smallerCircle};
+        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+        view.setBackground(layerDrawable);
+    }
+
+    private void buildInactiveColorPickerView(View view, int colorCode) {
         view.setVisibility(View.VISIBLE);
 
         ShapeDrawable biggerCircle = new ShapeDrawable(new OvalShape());
@@ -67,9 +96,14 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
         view.setBackground(layerDrawable);
     }
 
+    public void setActiveColorIndex(int index) {
+        activeColorIndex = index;
+    }
+
     public void setOnColorPickerClickListener(OnColorPickerClickListener onColorPickerClickListener) {
         this.onColorPickerClickListener = onColorPickerClickListener;
     }
+
 
     class ViewHolder extends RecyclerView.ViewHolder {
         View colorPickerView;
@@ -78,10 +112,14 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
             super(itemView);
             colorPickerView = itemView.findViewById(R.id.color_picker_view);
             itemView.setOnClickListener(new View.OnClickListener() {
+                @SuppressLint("NotifyDataSetChanged")
                 @Override
                 public void onClick(View v) {
-                    if (onColorPickerClickListener != null)
+                    if (onColorPickerClickListener != null) {
+                        setActiveColorIndex(getAdapterPosition());
                         onColorPickerClickListener.onColorPickerClickListener(colorPickerColors.get(getAdapterPosition()));
+                        notifyDataSetChanged();
+                    }
                 }
             });
         }

@@ -1,6 +1,7 @@
 package com.bezlepkin.photoeditor;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -16,6 +17,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.bezlepkin.photoeditor.Utils;
+import com.bezlepkin.photoeditor.base.BaseActivity;
 import com.canhub.cropper.CropImageView;
 
 import java.io.File;
@@ -24,7 +26,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class PhotoCropperActivity extends AppCompatActivity {
+public class PhotoCropperActivity extends BaseActivity {
     private String filepath;
     private CropImageView cropImageView;
     private ImageButton closeButton;
@@ -34,12 +36,6 @@ public class PhotoCropperActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // setting status bar and navigation bar color
-        Window window = this.getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.setStatusBarColor(ContextCompat.getColor(this, R.color.background));
-        window.setNavigationBarColor(ContextCompat.getColor(this, R.color.black));
 
         setContentView(R.layout.activity_photo_cropper);
 
@@ -60,7 +56,13 @@ public class PhotoCropperActivity extends AppCompatActivity {
         closeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onBackPressed();
+                /*
+                AlertDialog.Builder builder = new AlertDialog.Builder(getApplicationContext());
+                builder.setMessage(R.string.dialog_message)
+                        .setTitle(R.string.dialog_title);
+                AlertDialog dialog = builder.create();
+                 */
+                close(Activity.RESULT_CANCELED, new Intent());
             }
         });
 
@@ -80,8 +82,7 @@ public class PhotoCropperActivity extends AppCompatActivity {
                         intent.putExtra("filepath", file.getAbsolutePath());
                     }
 
-                    setResult(Activity.RESULT_OK, intent);
-                    finish();
+                    close(Activity.RESULT_OK, intent);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

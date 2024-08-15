@@ -1,5 +1,7 @@
 package com.bezlepkin.photoeditor.base;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Window;
@@ -27,5 +29,10 @@ public class BaseActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         // super.onBackPressed();
+    }
+
+    protected void close(int resultCode, Intent intent) {
+        setResult(resultCode, intent);
+        finish();
     }
 }

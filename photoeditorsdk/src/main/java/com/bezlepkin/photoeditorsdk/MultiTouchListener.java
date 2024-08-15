@@ -182,13 +182,6 @@ class MultiTouchListener implements OnTouchListener {
                     else
                         onPhotoEditorSDKListener.onStopViewChangeListener(ViewType.TEXT);
                 }
-            } else {
-                if (onPhotoEditorSDKListener != null) {
-                    if (isStart)
-                        onPhotoEditorSDKListener.onStartViewChangeListener(ViewType.EMOJI);
-                    else
-                        onPhotoEditorSDKListener.onStopViewChangeListener(ViewType.EMOJI);
-                }
             }
         } else {
             if (onPhotoEditorSDKListener != null) {

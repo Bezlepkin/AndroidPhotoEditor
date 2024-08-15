@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bezlepkin.photoeditor.base.BaseActivity;
+import com.bezlepkin.photoeditor.adapters.ColorPickerAdapter;
 import com.bezlepkin.photoeditorsdk.BrushDrawingView;
 import com.bezlepkin.photoeditorsdk.PhotoEditorSDK;
 import com.bezlepkin.photoeditorsdk.OnPhotoEditorSDKListener;
@@ -50,16 +51,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 
-enum Mode {
-    CROP,
-    DRAW,
-    TEXT
-}
-
 public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSDKListener {
-    private Mode activeMode;
+    private ModeType activeMode;
     private File outputFile;
     int textColor = Color.WHITE;
+    int textColorIndex = 0;
     private String originFilepath;
     private String currentFilepath;
     private ImageView imageView;
@@ -70,7 +66,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     private ImageButton textButton;
     private ImageButton cancelButton;
     private ImageButton applyButton;
-    private ImageButton shareButton;
     private Button saveButton;
     // controls
     private LinearLayout actionControls;
@@ -106,7 +101,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         textButton = findViewById(R.id.text_button);
         cancelButton = findViewById(R.id.cancel_button);
         applyButton = findViewById(R.id.apply_button);
-        shareButton = findViewById(R.id.share_button);
         saveButton = findViewById(R.id.save_button);
         // controls
         actionControls = findViewById(R.id.action_controls_layout);
@@ -134,7 +128,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         closeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                onBackPressed();
+                close(Activity.RESULT_CANCELED, new Intent());
             }
         });
 
@@ -148,6 +142,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         textButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                activeMode = ModeType.TEXT;
                 openAddTextPopupWindow("", textColor);
             }
         });
@@ -162,10 +157,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (activeMode == Mode.DRAW) {
+                if (activeMode == ModeType.DRAW) {
                     updateDrawingMode(false);
-                } else if (activeMode == Mode.TEXT) {
-
+                } else if (activeMode == ModeType.TEXT) {
+                    photoEditorSDK.clearAllViews();
+                    setEditMode(false);
                 }
             }
         });
@@ -173,17 +169,14 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         applyButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (activeMode == Mode.DRAW) {
+                if (activeMode == ModeType.DRAW) {
                     saveDrawingResult();
                     updateDrawingMode(false);
+                } else if (activeMode == ModeType.TEXT) {
+                    saveDrawingResult();
+                    photoEditorSDK.clearAllViews();
+                    setEditMode(false);
                 }
-            }
-        });
-
-        shareButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                shareFile(currentFilepath);
             }
         });
 
@@ -222,9 +215,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         switch (viewType) {
             case BRUSH_DRAWING:
                 Log.i("BRUSH_DRAWING", "onStartViewChangeListener");
-                break;
-            case EMOJI:
-                Log.i("EMOJI", "onStartViewChangeListener");
                 break;
             case IMAGE:
                 Log.i("IMAGE", "onStartViewChangeListener");
@@ -268,8 +258,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         colorPickerColors.add(ContextCompat.getColor(this, R.color.pink));
         colorPickerColors.add(ContextCompat.getColor(this, R.color.orange));
         colorPickerColors.add(ContextCompat.getColor(this, R.color.brown));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.cyan));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.purple));
     }
 
     private void setImage(String filepath) {
@@ -287,20 +275,23 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         startActivityForResult(intent, CROPPER_REQUEST_CODE);
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private void updateDrawingMode(Boolean drawingMode) {
         photoEditorSDK.setBrushDrawingMode(drawingMode);
+        photoEditorSDK.setBrushColor(colorPickerColors.get(0));
 
         if (drawingMode) {
-            activeMode = Mode.DRAW;
+            activeMode = ModeType.DRAW;
             modeControls.setVisibility(View.GONE);
             bottomControls.setVisibility(View.GONE);
             setActionControlsVisibility(View.VISIBLE);
             drawingViewColorPickerRecyclerView.setVisibility(View.VISIBLE);
 
-            LinearLayoutManager layoutManager = new LinearLayoutManager(PhotoEditorActivity.this, LinearLayoutManager.HORIZONTAL, false);
+            LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false);
             drawingViewColorPickerRecyclerView.setLayoutManager(layoutManager);
             drawingViewColorPickerRecyclerView.setHasFixedSize(true);
-            ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(PhotoEditorActivity.this, colorPickerColors);
+            ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(this, colorPickerColors);
+
             colorPickerAdapter.setOnColorPickerClickListener(new ColorPickerAdapter.OnColorPickerClickListener() {
                 @Override
                 public void onColorPickerClickListener(int colorCode) {
@@ -331,7 +322,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         View textAdditionalPopupView = inflater.inflate(R.layout.text_additional_popup, null);
 
         final EditText addTextEditText = textAdditionalPopupView.findViewById(R.id.text_input);
-        addTextEditText.setTextColor(color != null ? color : textColor);
+        addTextEditText.setTextColor(color != null ? color : colorPickerColors.get(textColorIndex));
         addTextEditText.setHintTextColor(Color.parseColor("#40FFFFFF"));
         addTextEditText.requestFocus();
 
@@ -340,14 +331,18 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         LinearLayoutManager layoutManager = new LinearLayoutManager(PhotoEditorActivity.this, LinearLayoutManager.HORIZONTAL, false);
         addTextColorPickerRecyclerView.setLayoutManager(layoutManager);
         addTextColorPickerRecyclerView.setHasFixedSize(true);
+
         ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(PhotoEditorActivity.this, colorPickerColors);
+        colorPickerAdapter.setActiveColorIndex(textColorIndex);
         colorPickerAdapter.setOnColorPickerClickListener(new ColorPickerAdapter.OnColorPickerClickListener() {
             @Override
             public void onColorPickerClickListener(int color) {
                 textColor = color;
+                textColorIndex = colorPickerColors.indexOf(color);
                 addTextEditText.setTextColor(textColor);
             }
         });
+
         addTextColorPickerRecyclerView.setAdapter(colorPickerAdapter);
         /*
         if (stringIsNotEmpty(text)) {
@@ -391,6 +386,8 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
     private void saveAddedTextResult(String text, int color) {
         photoEditorSDK.addText(text, color);
+        setEditMode(true);
+        // photoEditorSDK.clearAllViews();
     }
 
     private void saveResultWithReturn() {
@@ -437,36 +434,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
             Intent intent = new Intent();
             intent.putExtra("filepath", outputFile.getAbsolutePath());
-            setResult(Activity.RESULT_OK, intent);
-            finish();
+
+            close(Activity.RESULT_OK, intent);
         } catch (IOException e) {
             Log.d(TAG, "Error save output image ", e);
         }
-    }
-
-    private void shareFile(String filepath) {
-        try {
-            File file = Utils.createExternalTempFile(getApplicationContext());
-            FileOutputStream stream = new FileOutputStream(file);
-            Bitmap bitmap = BitmapFactory.decodeFile(filepath);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-            stream.flush();
-            stream.close();
-
-            Context context = getApplicationContext();
-            Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
-
-            Intent intent = new Intent();
-            intent.setAction(Intent.ACTION_SEND);
-            intent.putExtra(Intent.EXTRA_STREAM, uri);
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            intent.setType("image/*");
-
-            startActivity(Intent.createChooser(intent, "Share..."));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     private void createOutputFile() {
@@ -489,6 +461,18 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         } catch (IOException e) {
             Log.e(TAG, "Error saving an output image", e);
             throw new IOException();
+        }
+    }
+
+    protected void setEditMode(boolean isEditMode) {
+        if (isEditMode) {
+            modeControls.setVisibility(View.GONE);
+            bottomControls.setVisibility(View.GONE);
+            setActionControlsVisibility(View.VISIBLE);
+        } else {
+            modeControls.setVisibility(View.VISIBLE);
+            bottomControls.setVisibility(View.VISIBLE);
+            setActionControlsVisibility(View.GONE);
         }
     }
 }
