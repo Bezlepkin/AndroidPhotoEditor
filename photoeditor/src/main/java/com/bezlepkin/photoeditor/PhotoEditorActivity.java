@@ -35,6 +35,7 @@ import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bezlepkin.photoeditor.base.BaseActivity;
 import com.bezlepkin.photoeditorsdk.BrushDrawingView;
 import com.bezlepkin.photoeditorsdk.PhotoEditorSDK;
 import com.bezlepkin.photoeditorsdk.OnPhotoEditorSDKListener;
@@ -55,7 +56,7 @@ enum Mode {
     TEXT
 }
 
-public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEditorSDKListener {
+public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSDKListener {
     private Mode activeMode;
     private File outputFile;
     int textColor = Color.WHITE;
@@ -84,18 +85,10 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
 
     private final static int CROPPER_REQUEST_CODE = 1;
     private final static String FILENAME_PREFIX = "photo_editor";
-    private final String TAG = this.getClass().getSimpleName();
 
-    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // setting status bar and navigation bar color
-        Window window = this.getWindow();
-        window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.setStatusBarColor(ContextCompat.getColor(this, R.color.background));
-        window.setNavigationBarColor(ContextCompat.getColor(this, R.color.black));
 
         setContentView(R.layout.activity_photo_editor);
 
@@ -439,18 +432,15 @@ public class PhotoEditorActivity extends AppCompatActivity implements OnPhotoEdi
             if (outputFile == null) {
                 outputFile = Utils.createExternalFile(getApplicationContext());
             }
-            Log.d(TAG, "___442 " + currentFilepath);
-            Log.d(TAG, "___443 " + outputFile.getAbsolutePath());
+
             Utils.copyFile(new File(currentFilepath), outputFile);
-            Log.d(TAG, "____444 " + outputFile.getAbsolutePath());
+
             Intent intent = new Intent();
             intent.putExtra("filepath", outputFile.getAbsolutePath());
             setResult(Activity.RESULT_OK, intent);
             finish();
         } catch (IOException e) {
-            e.printStackTrace();
-            Log.d(TAG, "__449 " + e.getMessage());
-            // throw new RuntimeException(e);
+            Log.d(TAG, "Error save output image ", e);
         }
     }
 

@@ -19,7 +19,7 @@ public class Utils {
 
     public static File createExternalFile(Context context) throws IOException {
         String filename = FILENAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
-        return new File(context.getExternalFilesDir(null).getAbsolutePath(), filename + ".jpg");
+        return new File(context.getExternalFilesDir(null), filename + ".jpg");
     }
 
     public static File createExternalTempFile(Context context) throws IOException {
