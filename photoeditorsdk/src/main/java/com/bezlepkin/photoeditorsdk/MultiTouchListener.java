@@ -1,5 +1,6 @@
 package com.bezlepkin.photoeditorsdk;
 
+import android.annotation.SuppressLint;
 import android.graphics.Rect;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -91,6 +92,7 @@ class MultiTouchListener implements OnTouchListener {
         view.setTranslationY(view.getTranslationY() - offsetY);
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View view, MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(view, event);

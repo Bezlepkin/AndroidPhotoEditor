@@ -160,9 +160,10 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
                 if (activeMode == ModeType.DRAW) {
                     updateDrawingMode(false);
                 } else if (activeMode == ModeType.TEXT) {
-                    photoEditorSDK.clearAllViews();
                     setEditMode(false);
                 }
+
+                photoEditorSDK.clearAllViews();
             }
         });
 
@@ -264,7 +265,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 1;
         Bitmap bitmap = BitmapFactory.decodeFile(filepath, options);
-
+        // imageView.setImageURI(Uri.fromFile(new File(filepath)));
         imageView.setImageBitmap(bitmap);
     }
 
