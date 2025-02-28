@@ -97,6 +97,7 @@ public class MainActivity extends AppCompatActivity {
         if (requestCode == REQUEST_CAMERA_CAPTURE && resultCode == RESULT_OK) {
             Intent intent = new Intent(this, PhotoEditorActivity.class);
             intent.putExtra("imagePath", filepath);
+            intent.putExtra("colors", new int[4]);
             startActivity(intent);
         }
     }

@@ -2,7 +2,6 @@ package com.bezlepkin.photoeditor;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -15,8 +14,6 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewTreeObserver;
-import android.view.Window;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -29,9 +26,7 @@ import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
 
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -44,19 +39,17 @@ import com.bezlepkin.photoeditorsdk.ViewType;
 
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSDKListener {
     private ModeType activeMode;
     private File outputFile;
     int textColor = Color.WHITE;
     int textColorIndex = 0;
-    private String originFilepath;
+
     private String currentFilepath;
     private ImageView imageView;
     private RelativeLayout imageWrapLayout;
@@ -88,8 +81,9 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         setContentView(R.layout.activity_photo_editor);
 
         Bundle extras = getIntent().getExtras();
+        String originFilepath = extras.getString("imagePath");
+        ArrayList<Integer> colors = extras.getIntegerArrayList("colors");
 
-        originFilepath = extras.getString("imagePath");
         setCurrentFilepath(originFilepath);
 
         imageView = findViewById(R.id.image_view);
@@ -114,7 +108,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
         setImage(originFilepath);
         // setup draw colors
-        setupColorPickerColors();
+        setupColorPickerColors(colors);
 
         photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this)
                 .parentView(imageWrapLayout)
@@ -247,20 +241,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
-    private void setupColorPickerColors() {
-        colorPickerColors = new ArrayList<>();
-        // the Material colors are used here https://materialui.co/colors
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.white));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.black));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.red));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.green));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.blue));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.yellow));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.pink));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.orange));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.brown));
-    }
-
     private void setImage(String filepath) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = 1;
@@ -312,6 +292,24 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
     private void setCurrentFilepath(String filepath) {
         currentFilepath = filepath;
+    }
+
+    private void setupColorPickerColors(ArrayList<Integer> colors) {
+        colorPickerColors = new ArrayList<Integer>();
+        Log.d(TAG, String.valueOf(colors == null));
+        if (colors != null) {
+            colorPickerColors.addAll(colors);
+        }
+        // the Material colors are used here https://materialui.co/colors
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.white));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.black));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.red));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.green));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.blue));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.yellow));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.pink));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.orange));
+        colorPickerColors.add(ContextCompat.getColor(this, R.color.brown));
     }
 
     private void setActionControlsVisibility(Integer visibility) {
