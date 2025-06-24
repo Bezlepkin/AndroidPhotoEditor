@@ -54,48 +54,6 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
         return colorPickerColors.size();
     }
 
-    private void buildActiveColorPickerView(View view, int colorCode) {
-        view.setVisibility(View.VISIBLE);
-        // bigger
-        ShapeDrawable middleCircle = new ShapeDrawable(new OvalShape());
-        middleCircle.setPadding(6, 6, 6, 6);
-        middleCircle.getPaint().setColor(colorCode);
-
-        ShapeDrawable biggerCircle = new ShapeDrawable(new OvalShape());
-        biggerCircle.setPadding(10, 10, 10, 10);
-        biggerCircle.getPaint().setColor(Color.BLACK);
-
-        ShapeDrawable smallerCircle = new ShapeDrawable(new OvalShape());
-        smallerCircle.getPaint().setColor(colorCode);
-
-        Drawable[] drawables = {middleCircle, biggerCircle, smallerCircle};
-        LayerDrawable layerDrawable = new LayerDrawable(drawables);
-
-        view.setBackground(layerDrawable);
-    }
-
-    private void buildInactiveColorPickerView(View view, int colorCode) {
-        view.setVisibility(View.VISIBLE);
-
-        ShapeDrawable biggerCircle = new ShapeDrawable(new OvalShape());
-        biggerCircle.setIntrinsicHeight(20);
-        biggerCircle.setIntrinsicWidth(20);
-        biggerCircle.setBounds(new Rect(0, 0, 20, 20));
-        biggerCircle.getPaint().setColor(colorCode);
-
-        ShapeDrawable smallerCircle = new ShapeDrawable(new OvalShape());
-        smallerCircle.setIntrinsicHeight(2);
-        smallerCircle.setIntrinsicWidth(2);
-        smallerCircle.setBounds(new Rect(0, 0, 2, 2));
-        smallerCircle.getPaint().setColor(Color.WHITE);
-        smallerCircle.setPadding(4, 4, 4, 4);
-        Drawable[] drawables = {smallerCircle, biggerCircle};
-
-        LayerDrawable layerDrawable = new LayerDrawable(drawables);
-
-        view.setBackground(layerDrawable);
-    }
-
     public void setActiveColorIndex(int index) {
         activeColorIndex = index;
     }
@@ -104,6 +62,49 @@ public class ColorPickerAdapter extends RecyclerView.Adapter<ColorPickerAdapter.
         this.onColorPickerClickListener = onColorPickerClickListener;
     }
 
+    private void buildActiveColorPickerView(View view, int colorCode) {
+        view.setVisibility(View.VISIBLE);
+
+        ShapeDrawable outerCircle = new ShapeDrawable(new OvalShape());
+        ShapeDrawable middleCircle = new ShapeDrawable(new OvalShape());
+        ShapeDrawable innerCircle = new ShapeDrawable(new OvalShape());
+        // outer circle
+        outerCircle.setPadding(6, 6, 6, 6);
+        outerCircle.getPaint().setColor(Color.BLACK);
+        // middle circle
+        middleCircle.setPadding(6, 6, 6, 6);
+        middleCircle.getPaint().setColor(colorCode);
+        // inner circle
+        innerCircle.getPaint().setColor(colorCode);
+
+        Drawable[] drawables = {middleCircle, outerCircle, innerCircle};
+        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+        view.setBackground(layerDrawable);
+    }
+
+    private void buildInactiveColorPickerView(View view, int colorCode) {
+        view.setVisibility(View.VISIBLE);
+
+        ShapeDrawable outerCircle = new ShapeDrawable(new OvalShape());
+        ShapeDrawable innerCircle = new ShapeDrawable(new OvalShape());
+        // outer circle
+        outerCircle.setIntrinsicHeight(20);
+        outerCircle.setIntrinsicWidth(20);
+        outerCircle.setBounds(new Rect(0, 0, 20, 20));
+        outerCircle.getPaint().setColor(colorCode);
+        // inner circle
+        innerCircle.setIntrinsicHeight(2);
+        innerCircle.setIntrinsicWidth(2);
+        innerCircle.setBounds(new Rect(0, 0, 2, 2));
+        innerCircle.getPaint().setColor(Color.WHITE);
+        innerCircle.setPadding(4, 4, 4, 4);
+        Drawable[] drawables = {innerCircle, outerCircle};
+
+        LayerDrawable layerDrawable = new LayerDrawable(drawables);
+
+        view.setBackground(layerDrawable);
+    }
 
     class ViewHolder extends RecyclerView.ViewHolder {
         View colorPickerView;

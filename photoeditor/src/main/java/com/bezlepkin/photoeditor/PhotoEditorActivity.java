@@ -1,5 +1,7 @@
 package com.bezlepkin.photoeditor;
 
+import static com.google.android.material.internal.ViewUtils.dpToPx;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.ClipData;
@@ -8,8 +10,11 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.graphics.Insets;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -28,27 +33,23 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
-
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.content.ContextCompat;
-import androidx.core.content.FileProvider;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bezlepkin.photoeditor.base.BaseActivity;
+import com.bezlepkin.photoeditor.Constant;
 import com.bezlepkin.photoeditor.adapters.ColorPickerAdapter;
+import com.bezlepkin.photoeditor.helpers.InsetsWithKeyboardAnimationCallbackHelper;
+import com.bezlepkin.photoeditor.helpers.InsetsWithKeyboardCallbackHelper;
 import com.bezlepkin.photoeditorsdk.BrushDrawingView;
 import com.bezlepkin.photoeditorsdk.PhotoEditorSDK;
 import com.bezlepkin.photoeditorsdk.OnPhotoEditorSDKListener;
 import com.bezlepkin.photoeditorsdk.ViewType;
 
-
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 
 public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSDKListener {
@@ -56,10 +57,9 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     private File outputFile;
     int textColor = Color.WHITE;
     int textColorIndex = 0;
-    private String originFilepath;
     private String currentFilepath;
     private ImageView imageView;
-    private RelativeLayout imageWrapLayout;
+    private RelativeLayout imageLayout;
     private ImageButton closeButton;
     private ImageButton cropButton;
     private ImageButton drawButton;
@@ -84,16 +84,13 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
         setContentView(R.layout.activity_photo_editor);
 
         Bundle extras = getIntent().getExtras();
 
-        originFilepath = extras.getString("imagePath");
-        setCurrentFilepath(originFilepath);
-
-        imageView = findViewById(R.id.image_view);
-        imageWrapLayout = findViewById(R.id.image_wrap_layout);
+        String filepath = extras.getString("imagePath");
+        ArrayList<Integer> colors = extras.getIntegerArrayList("colors");
+        initImageView();
         // buttons
         closeButton = findViewById(R.id.close_button);
         cropButton = findViewById(R.id.crop_button);
@@ -112,14 +109,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
         RelativeLayout deleteRelativeLayout = findViewById(R.id.delete_rl);
 
-        setImage(originFilepath);
-        // setup draw colors
-        setupColorPickerColors();
+        setCurrentFilepath(filepath);
+        setImage(filepath);
+        initColors(colors);
 
-        photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this)
-                .parentView(imageWrapLayout)
-                .childView(imageView)
-                .deleteView(deleteRelativeLayout) // add the deleted view that will appear during the movement of the views
+        photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this).parentView(imageLayout).childView(imageView).deleteView(deleteRelativeLayout) // add the deleted view that will appear during the movement of the views
                 .brushDrawingView(brushDrawingView) // add the brush drawing view that is responsible for drawing on the image view
                 .buildPhotoEditorSDK(); // build photo editor sdk
 
@@ -139,18 +133,18 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
             }
         });
 
+        drawButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                updateDrawingMode(true);
+            }
+        });
+
         textButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 activeMode = ModeType.TEXT;
                 openAddTextPopupWindow("", textColor);
-            }
-        });
-
-        drawButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateDrawingMode(true);
             }
         });
 
@@ -184,10 +178,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         saveButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                // saveResultWithReturn();
-                saveResultWithReturn2();
+                saveResultWithReturn();
             }
         });
+
+        onKeyboardShowListener(this);
     }
 
     @Override
@@ -236,6 +231,31 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         super.onPointerCaptureChanged(hasCapture);
     }
 
+    public void onKeyboardShowListener(final Activity activity) {
+        Context context = getApplication().getApplicationContext();
+        final View view = this.findViewById(android.R.id.content);
+        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @SuppressLint("RestrictedApi")
+            @Override
+            public void onGlobalLayout() {
+                Rect rect = new Rect();
+                view.getWindowVisibleDisplayFrame(rect);
+                int rootHeight = view.getRootView().getHeight();
+                int diffHeight = rootHeight - rect.bottom;
+                DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+                float scale = metrics.density;
+                int height = (int) (diffHeight / scale);
+
+                if (diffHeight > rootHeight * 0.15) {
+                    Log.d("Keyboard", "Keyboard is open");
+                } else {
+                    Log.d("Keyboard", "Keyboard is closed");
+                }
+            }
+        });
+
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -247,18 +267,12 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
-    private void setupColorPickerColors() {
-        colorPickerColors = new ArrayList<>();
-        // the Material colors are used here https://materialui.co/colors
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.white));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.black));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.red));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.green));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.blue));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.yellow));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.pink));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.orange));
-        colorPickerColors.add(ContextCompat.getColor(this, R.color.brown));
+    private void initColors(ArrayList<Integer> colors) {
+        if (!colors.isEmpty()) {
+            colorPickerColors = colors;
+        } else {
+            colorPickerColors = Constant.getDefaultColors(this);
+        }
     }
 
     private void setImage(String filepath) {
@@ -278,8 +292,9 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
     @SuppressLint("NotifyDataSetChanged")
     private void updateDrawingMode(Boolean drawingMode) {
+        int colorIndex = !colorPickerColors.contains(2) ? 0 : 2;
         photoEditorSDK.setBrushDrawingMode(drawingMode);
-        photoEditorSDK.setBrushColor(colorPickerColors.get(0));
+        photoEditorSDK.setBrushColor(colorPickerColors.get(colorIndex));
 
         if (drawingMode) {
             activeMode = ModeType.DRAW;
@@ -292,6 +307,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
             drawingViewColorPickerRecyclerView.setLayoutManager(layoutManager);
             drawingViewColorPickerRecyclerView.setHasFixedSize(true);
             ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(this, colorPickerColors);
+            colorPickerAdapter.setActiveColorIndex(colorIndex);
 
             colorPickerAdapter.setOnColorPickerClickListener(new ColorPickerAdapter.OnColorPickerClickListener() {
                 @Override
@@ -319,55 +335,31 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     }
 
     private void openAddTextPopupWindow(String text, Integer color) {
-        LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        View textAdditionalPopupView = inflater.inflate(R.layout.text_additional_popup, null);
 
-        final EditText addTextEditText = textAdditionalPopupView.findViewById(R.id.text_input);
-        addTextEditText.setTextColor(color != null ? color : colorPickerColors.get(textColorIndex));
-        addTextEditText.setHintTextColor(Color.parseColor("#40FFFFFF"));
-        addTextEditText.requestFocus();
+        final TextAdditionalPopupWindow textAdditionalPopup = new TextAdditionalPopupWindow(
+                this,
+                (color != null) ? color : colorPickerColors.get(textColorIndex),
+                colorPickerColors
+        );
 
-        ImageButton applyButton = textAdditionalPopupView.findViewById(R.id.apply_button);
-        RecyclerView addTextColorPickerRecyclerView = textAdditionalPopupView.findViewById(R.id.add_text_color_picker_recycler_view);
-        LinearLayoutManager layoutManager = new LinearLayoutManager(PhotoEditorActivity.this, LinearLayoutManager.HORIZONTAL, false);
-        addTextColorPickerRecyclerView.setLayoutManager(layoutManager);
-        addTextColorPickerRecyclerView.setHasFixedSize(true);
+        textAdditionalPopup.show();
+        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
 
-        ColorPickerAdapter colorPickerAdapter = new ColorPickerAdapter(PhotoEditorActivity.this, colorPickerColors);
-        colorPickerAdapter.setActiveColorIndex(textColorIndex);
-        colorPickerAdapter.setOnColorPickerClickListener(new ColorPickerAdapter.OnColorPickerClickListener() {
+        textAdditionalPopup.setOnApplyClickListener(new TextAdditionalPopupWindow.OnApplyClickListener() {
             @Override
-            public void onColorPickerClickListener(int color) {
-                textColor = color;
-                textColorIndex = colorPickerColors.indexOf(color);
-                addTextEditText.setTextColor(textColor);
+            public void onClick(String text, int color) {
+                saveAddedTextResult(text, color);
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(textAdditionalPopup.getContentView().getWindowToken(), 0);
+                textAdditionalPopup.dismiss();
             }
         });
 
-        addTextColorPickerRecyclerView.setAdapter(colorPickerAdapter);
-        /*
-        if (stringIsNotEmpty(text)) {
-            addTextEditText.setText(text);
-            addTextEditText.setTextColor(colorCode == -1 ? getResources().getColor(R.color.white) : colorCode);
-        }
-        */
-        final PopupWindow pop = new PopupWindow(PhotoEditorActivity.this);
-        pop.setContentView(textAdditionalPopupView);
-        pop.setWidth(LinearLayout.LayoutParams.MATCH_PARENT);
-        pop.setHeight(LinearLayout.LayoutParams.MATCH_PARENT);
-        pop.setFocusable(true);
-        pop.setBackgroundDrawable(null);
-        pop.showAtLocation(textAdditionalPopupView, Gravity.TOP, 0, 0);
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-
-        applyButton.setOnClickListener(new View.OnClickListener() {
+        textAdditionalPopup.setOnColorPickerClickListener(new TextAdditionalPopupWindow.OnColorPickerClickListener() {
             @Override
-            public void onClick(View view) {
-                saveAddedTextResult(addTextEditText.getText().toString(), textColor);
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-                pop.dismiss();
+            public void onClick(int colorCode) {
+                textColorIndex = colorPickerColors.indexOf(colorCode);
             }
         });
     }
@@ -385,53 +377,19 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
-    private void saveAddedTextResult(String text, int color) {
-        photoEditorSDK.addText(text, color);
+    private void saveAddedTextResult(String text, int colorCode) {
+        photoEditorSDK.addText(text, colorCode);
         setEditMode(true);
         // photoEditorSDK.clearAllViews();
     }
 
     private void saveResultWithReturn() {
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(
-                RelativeLayout.LayoutParams.WRAP_CONTENT,
-                RelativeLayout.LayoutParams.WRAP_CONTENT
-        );
-        layoutParams.addRule(RelativeLayout.CENTER_IN_PARENT, RelativeLayout.TRUE);
-
-        imageWrapLayout.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @Override
-            public void onGlobalLayout() {
-                try {
-                    String filename = FILENAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
-                    File file = new File(getExternalFilesDir(null).getAbsolutePath(), filename + ".jpg");
-
-                    Uri tempFileUri = Uri.fromFile(File.createTempFile("photo_editor_", ".jpg", getCacheDir()));
-                    String[] filepathArr = tempFileUri.getPath().split("/");
-                    String filename2 = filepathArr[filepathArr.length - 1];
-                    String filepath = photoEditorSDK.saveImage("", filename2);
-
-                    Intent intent = new Intent();
-                    intent.putExtra("filepath", filepath);
-
-                    setResult(Activity.RESULT_OK, intent);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    finish();
-                }
-            }
-        });
-
-        imageWrapLayout.setLayoutParams(layoutParams);
-    }
-
-    private void saveResultWithReturn2() {
         try {
             if (outputFile == null) {
-                outputFile = Utils.createExternalFile(getApplicationContext());
+                outputFile = Util.createExternalFile(getApplicationContext());
             }
 
-            Utils.copyFile(new File(currentFilepath), outputFile);
+            Util.copyFile(new File(currentFilepath), outputFile);
 
             Intent intent = new Intent();
             intent.putExtra("filepath", outputFile.getAbsolutePath());
@@ -442,27 +400,17 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
-    private void createOutputFile() {
-        String filename = FILENAME_PREFIX + "_" + String.valueOf(System.currentTimeMillis());
-        outputFile = new File(getExternalFilesDir(null).getAbsolutePath(), filename + ".jpg");
-        Log.d(TAG, "___482 " + outputFile);
-        // /storage/emulated/0/Android/data/com.bezlepkin.photoeditordemo/files/photo_editor_1723576640202.jpg
+    private void initImageView() {
+        imageView = findViewById(R.id.image_view);
+        imageLayout = findViewById(R.id.image_layout);
+        final View parentView = findViewById(R.id.parent_layout);
 
-    }
+        final Window window = getWindow();
+        final InsetsWithKeyboardCallbackHelper insetsWithKeyboardCallbackHelper = new InsetsWithKeyboardCallbackHelper(window);
+        final WindowInsetsAnimationCompat.Callback insetsWithKeyboardAnimationCallbackHelper = new InsetsWithKeyboardAnimationCallbackHelper(parentView);
 
-    private File saveOutputImage(File outputFile) throws IOException {
-        try {
-            FileOutputStream stream = new FileOutputStream(outputFile);
-            Bitmap bitmap = BitmapFactory.decodeFile(currentFilepath);
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream);
-            stream.flush();
-            stream.close();
-
-            return outputFile;
-        } catch (IOException e) {
-            Log.e(TAG, "Error saving an output image", e);
-            throw new IOException();
-        }
+        ViewCompat.setOnApplyWindowInsetsListener(parentView, insetsWithKeyboardCallbackHelper);
+        ViewCompat.setWindowInsetsAnimationCallback(parentView, insetsWithKeyboardAnimationCallbackHelper);
     }
 
     protected void setEditMode(boolean isEditMode) {

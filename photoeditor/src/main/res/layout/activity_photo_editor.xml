@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/parent"
+    android:id="@+id/parent_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
@@ -10,12 +10,11 @@
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@color/background"
+        android:layout_height="wrap_content"
         android:gravity="center">
 
         <RelativeLayout
-            android:id="@+id/image_wrap_layout"
+            android:id="@+id/image_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true">
@@ -176,15 +175,20 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
-            android:orientation="horizontal"
+            android:layout_marginBottom="0dp"
             android:gravity="center"
+            android:orientation="horizontal"
             android:paddingTop="16dp"
             android:paddingBottom="16dp">
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/drawing_view_color_picker_recycler_view"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:clipToPadding="false"
+                android:overScrollMode="never"
+                android:paddingLeft="10dp"
+                android:paddingRight="10dp" />
         </LinearLayout>
     </RelativeLayout>
 </RelativeLayout>

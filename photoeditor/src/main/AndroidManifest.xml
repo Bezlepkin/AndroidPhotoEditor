@@ -7,7 +7,8 @@
             android:name=".PhotoEditorActivity"
             android:exported="false"
             android:label="@string/title_activity_photo_editor"
-            android:theme="@style/Theme.PhotoEditor" />
+            android:theme="@style/Theme.PhotoEditor"
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".PhotoCropperActivity"
             android:exported="false"

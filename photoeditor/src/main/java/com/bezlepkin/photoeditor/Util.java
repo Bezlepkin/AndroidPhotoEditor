@@ -1,20 +1,17 @@
 package com.bezlepkin.photoeditor;
 
 import android.content.Context;
-import android.net.Uri;
-import android.os.Environment;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 
-public class Utils {
+public class Util {
     private final static String FILENAME_PREFIX = "photo_editor";
 
     public static File createExternalFile(Context context) throws IOException {
@@ -31,11 +28,6 @@ public class Utils {
     }
 
     public static void copyFile(File source, File destination) throws IOException {
-        /*
-        if (!destination.exists()) {
-            destination.createNewFile();
-        }
-           */
         try (FileInputStream inputStream = new FileInputStream(source);
              FileOutputStream outputStream = new FileOutputStream(destination)
         ) {
@@ -48,5 +40,10 @@ public class Utils {
         } catch (IOException e) {
             Log.d("Error copy file: ", e.getMessage());
         }
+    }
+
+    public static float dpToPx(Context context, int dp) {
+        DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, metrics);
     }
 }

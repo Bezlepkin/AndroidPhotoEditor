@@ -11,14 +11,10 @@ import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.Toast;
 
@@ -26,6 +22,7 @@ import com.bezlepkin.photoeditor.PhotoEditorActivity;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
     private String filepath;
@@ -95,8 +92,34 @@ public class MainActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
 
         if (requestCode == REQUEST_CAMERA_CAPTURE && resultCode == RESULT_OK) {
+            ArrayList<Integer> colors = new ArrayList<Integer>();
+            /*
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.white));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.black));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.red));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.green));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.blue));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.yellow));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.pink));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.white));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.black));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.red));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.green));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.blue));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.yellow));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.pink));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
+            colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
+            */
             Intent intent = new Intent(this, PhotoEditorActivity.class);
             intent.putExtra("imagePath", filepath);
+            intent.putExtra("colors", colors);
             startActivity(intent);
         }
     }

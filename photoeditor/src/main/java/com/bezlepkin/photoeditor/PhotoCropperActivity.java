@@ -16,7 +16,7 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.bezlepkin.photoeditor.Utils;
+import com.bezlepkin.photoeditor.Util;
 import com.bezlepkin.photoeditor.base.BaseActivity;
 import com.canhub.cropper.CropImageView;
 
@@ -72,7 +72,7 @@ public class PhotoCropperActivity extends BaseActivity {
                 try {
                     Intent intent = new Intent();
                     Bitmap bitmap = cropImageView.getCroppedImage();
-                    File file = Utils.createTempFile(getApplicationContext());
+                    File file = Util.createTempFile(getApplicationContext());
                     FileOutputStream out = new FileOutputStream(file);
 
                     if (bitmap != null) {
