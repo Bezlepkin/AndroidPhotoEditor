@@ -93,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (requestCode == REQUEST_CAMERA_CAPTURE && resultCode == RESULT_OK) {
             ArrayList<Integer> colors = new ArrayList<Integer>();
-            /*
+
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.white));
@@ -116,9 +116,10 @@ public class MainActivity extends AppCompatActivity {
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.pink));
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.orange));
             colors.add(ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.brown));
-            */
+
             Intent intent = new Intent(this, PhotoEditorActivity.class);
             intent.putExtra("imagePath", filepath);
+            intent.putExtra("themeColor", ContextCompat.getColor(this, com.bezlepkin.photoeditor.R.color.green));
             intent.putExtra("colors", colors);
             startActivity(intent);
         }

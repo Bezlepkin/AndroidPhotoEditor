@@ -17,8 +17,6 @@ package com.bezlepkin.photoeditor;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,15 +25,10 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
-import androidx.activity.result.ActivityResultLauncher;
 import androidx.annotation.NonNull;
-
 import android.annotation.SuppressLint;
-
 import androidx.core.graphics.Insets;
 import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
@@ -44,7 +37,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bezlepkin.photoeditor.animator.FragmentHeightAnimator;
+import com.bezlepkin.photoeditor.animator.KeyboardOffsetAnimator;
+import com.bezlepkin.photoeditor.animator.ImageSizeFreezeAnimator;
 import com.bezlepkin.photoeditor.base.BaseActivity;
 import com.bezlepkin.photoeditor.adapters.ColorPickerAdapter;
 import com.bezlepkin.photoeditorsdk.BrushDrawingView;
@@ -66,6 +60,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     int textColor = Color.WHITE;
     int textColorIndex = 0;
     private String currentFilepath;
+    private Integer themeColor;
     private ImageButton closeButton;
     private ImageButton cropButton;
     private ImageButton drawButton;
@@ -81,8 +76,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     // for draw
     private ArrayList<Integer> colorPickerColors;
     private PhotoEditorSDK photoEditorSDK;
-    private ActivityResultLauncher cropActivityForResult;
-
     private final static int CROPPER_REQUEST_CODE = 1;
     private final static String FILENAME_PREFIX = "photo_editor";
     private ActivityPhotoEditorBinding binding;
@@ -96,20 +89,17 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         setContentView(binding.getRoot());
 
         Bundle extras = getIntent().getExtras();
-        String filepath = extras.getString("imagePath");
 
-        ArrayList<Integer> colors = extras.getIntegerArrayList("colors");
-        if (colors == null) {
-            colors = new ArrayList<>();
+        if (extras != null) {
+            String filepath = extras.getString("imagePath");
+            themeColor = extras.getInt("themeColor");
+            ArrayList<Integer> colors = extras.getIntegerArrayList("colors");
+            colors = colors != null ? colors : new ArrayList<>();
+
+            setCurrentFilepath(filepath);
+            setImage(filepath);
+            initColors(colors);
         }
-        // Buttons
-        closeButton = findViewById(R.id.close_button);
-        cropButton = findViewById(R.id.crop_button);
-        drawButton = findViewById(R.id.draw_button);
-        textButton = findViewById(R.id.text_button);
-        cancelButton = findViewById(R.id.cancel_button);
-        applyButton = findViewById(R.id.apply_button);
-        saveButton = findViewById(R.id.save_button);
         // Controls
         actionControls = findViewById(R.id.action_controls_layout);
         modeControls = findViewById(R.id.mode_controls_layout);
@@ -120,11 +110,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
         RelativeLayout deleteRelativeLayout = findViewById(R.id.delete_rl);
 
-        setCurrentFilepath(filepath);
-        setImage(filepath);
-        initColors(colors);
-
-
         photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this)
                 .parentView(binding.canvasLayout)
                 .childView(binding.imageView)
@@ -134,69 +119,8 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
         photoEditorSDK.setOnPhotoEditorSDKListener(this);
 
-        closeButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                close(Activity.RESULT_CANCELED, new Intent());
-            }
-        });
-
-        cropButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                beginCropping();
-            }
-        });
-
-        drawButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                updateDrawingMode(true);
-            }
-        });
-
-        textButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                runTypingMode(textColor);
-            }
-        });
-
-        cancelButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (activeMode == ModeType.DRAW) {
-                    updateDrawingMode(false);
-                } else if (activeMode == ModeType.TEXT) {
-                    setEditMode(false);
-                }
-
-                photoEditorSDK.clearAllViews();
-            }
-        });
-
-        applyButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                if (activeMode == ModeType.DRAW) {
-                    saveDrawingResult();
-                    updateDrawingMode(false);
-                } else if (activeMode == ModeType.TEXT) {
-                    saveDrawingResult();
-                    photoEditorSDK.clearAllViews();
-                    setEditMode(false);
-                }
-            }
-        });
-
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                saveResultWithReturn();
-            }
-        });
-
         setupViewListeners();
+        setupButtons();
         setupWindowInsetsListeners();
     }
 
@@ -388,14 +312,12 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
             }
         });
 
-        View canvasContainer = binding.canvasContainerLayout;
         View textAdditionalFragmentView = binding.textAdditionalFragment.getFragment().getView();
-
         assert textAdditionalFragmentView != null;
         textAdditionalFragmentView.setVisibility(View.VISIBLE);
-
-        ViewCompat.setWindowInsetsAnimationCallback(canvasContainer, new FragmentHeightAnimator(canvasContainer));
-        ViewCompat.setWindowInsetsAnimationCallback(textAdditionalFragmentView, new FragmentHeightAnimator(textAdditionalFragmentView));
+        // ViewCompat.setWindowInsetsAnimationCallback(textAdditionalFragmentView, new ImageSizeFreezeAnimator(binding.imageView));
+        ViewCompat.setWindowInsetsAnimationCallback(binding.canvasContainerLayout, new KeyboardOffsetAnimator(binding.canvasContainerLayout));
+        ViewCompat.setWindowInsetsAnimationCallback(textAdditionalFragmentView, new KeyboardOffsetAnimator(textAdditionalFragmentView));
     }
 
     private void saveTypingModeResult(String text, int colorCode) {
@@ -427,6 +349,81 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
                 layoutParams.width = imageWidth;
                 layoutParams.height = imageHeight;
                 binding.drawingView.setLayoutParams(layoutParams);
+            }
+        });
+    }
+
+    private void setupButtons() {
+        closeButton = binding.closeButton;
+        cropButton = binding.cropButton;
+        drawButton = binding.drawButton;
+        textButton = binding.textButton;
+        cancelButton = binding.cancelButton;
+        applyButton = binding.applyButton;
+        saveButton = binding.saveButton;
+
+        closeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                close(Activity.RESULT_CANCELED, new Intent());
+            }
+        });
+
+        cropButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                beginCropping();
+            }
+        });
+
+        drawButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                updateDrawingMode(true);
+            }
+        });
+
+        textButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                runTypingMode(textColor);
+            }
+        });
+
+        cancelButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (activeMode == ModeType.DRAW) {
+                    updateDrawingMode(false);
+                } else if (activeMode == ModeType.TEXT) {
+                    setEditMode(false);
+                }
+
+                photoEditorSDK.clearAllViews();
+            }
+        });
+
+        applyButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (activeMode == ModeType.DRAW) {
+                    saveDrawingResult();
+                    updateDrawingMode(false);
+                } else if (activeMode == ModeType.TEXT) {
+                    saveDrawingResult();
+                    photoEditorSDK.clearAllViews();
+                    setEditMode(false);
+                }
+            }
+        });
+
+        if (themeColor != null && themeColor != 0) {
+            saveButton.setBackgroundColor(themeColor);
+        }
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                saveResultWithReturn();
             }
         });
     }

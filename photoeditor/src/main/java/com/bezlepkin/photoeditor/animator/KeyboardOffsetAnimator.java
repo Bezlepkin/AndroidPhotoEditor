@@ -8,11 +8,11 @@ import androidx.core.view.WindowInsetsAnimationCompat;
 
 import java.util.List;
 
-public class FragmentHeightAnimator extends WindowInsetsAnimationCompat.Callback {
+public class KeyboardOffsetAnimator extends WindowInsetsAnimationCompat.Callback {
     private final View view;
     private boolean isImeOpening;
 
-    public FragmentHeightAnimator(View view) {
+    public KeyboardOffsetAnimator(View view) {
         super(DISPATCH_MODE_STOP);
         this.view = view;
     }
