@@ -16,4 +16,5 @@
             android:theme="@style/Theme.PhotoEditor" />
     </application>
 
+
 </manifest>

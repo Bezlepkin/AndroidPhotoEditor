@@ -1,41 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/parent_layout"
+    android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background"
-    android:fitsSystemWindows="true"
     tools:context="com.bezlepkin.photoeditor.PhotoEditorActivity">
 
     <RelativeLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:gravity="center">
 
         <RelativeLayout
-            android:id="@+id/image_layout"
-            android:layout_width="match_parent"
+            android:id="@+id/canvas_container_layout"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true">
+            android:gravity="center"
+            android:layout_below="@id/mode_controls_layout"
+            android:layout_above="@id/bottom_controls_layout">
 
-            <ImageView
-                android:id="@+id/image_view"
-                android:layout_width="match_parent"
+            <RelativeLayout
+                android:id="@+id/canvas_layout"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
-                android:adjustViewBounds="true"
-                android:contentDescription="@string/image"
-                android:scaleType="centerCrop" />
+                android:gravity="center"
+                android:layout_centerInParent="true">
+                <ImageView
+                    android:id="@+id/image_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/image"
+                    android:scaleType="fitCenter" />
 
-            <com.bezlepkin.photoeditorsdk.BrushDrawingView
-                android:id="@+id/drawing_view"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_alignTop="@+id/image_view"
-                android:layout_alignBottom="@+id/image_view"
-                android:layout_centerInParent="true"
-                android:visibility="gone" />
+                <com.bezlepkin.photoeditorsdk.BrushDrawingView
+                    android:id="@+id/drawing_view"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:visibility="invisible" />
+            </RelativeLayout>
         </RelativeLayout>
 
         <RelativeLayout
@@ -168,6 +172,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:backgroundTint="@color/primary"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:minHeight="42dp"
                 android:text="@string/save" />
         </LinearLayout>
 
@@ -191,4 +198,10 @@
                 android:paddingRight="10dp" />
         </LinearLayout>
     </RelativeLayout>
+
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/text_additional_fragment"
+        android:name="com.bezlepkin.photoeditor.TextAdditionalFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 </RelativeLayout>

@@ -16,8 +16,7 @@ import android.widget.ImageButton;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.bezlepkin.photoeditor.Util;
-import com.bezlepkin.photoeditor.base.BaseActivity;
+import com.bezlepkin.photoeditor.databinding.ActivityPhotoEditorBinding;
 import com.canhub.cropper.CropImageView;
 
 import java.io.File;
@@ -26,25 +25,31 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import com.bezlepkin.photoeditor.Util;
+import com.bezlepkin.photoeditor.base.BaseActivity;
+import com.bezlepkin.photoeditor.databinding.ActivityPhotoCropperBinding;
+
 public class PhotoCropperActivity extends BaseActivity {
     private String filepath;
     private CropImageView cropImageView;
     private ImageButton closeButton;
     private ImageButton applyButton;
-    private final String TAG = this.getClass().getSimpleName();
+    private ActivityPhotoCropperBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        binding = ActivityPhotoCropperBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        setContentView(R.layout.activity_photo_cropper);
-
-        cropImageView = findViewById(R.id.crop_image_view);
-        closeButton = findViewById(R.id.close_button);
-        applyButton = findViewById(R.id.apply_button);
+        cropImageView = binding.cropImageView;
+        closeButton = binding.closeButton;
+        applyButton = binding.applyButton;
 
         Bundle extras = getIntent().getExtras();
+        assert extras != null;
         filepath = extras.getString("filepath");
+        assert filepath != null;
         File file = new File(filepath);
 
         if (file.exists()) {

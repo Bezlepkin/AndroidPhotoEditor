@@ -1,56 +1,64 @@
+/*
+ * Copyright 2025 Igor Bezlepkin
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.bezlepkin.photoeditor;
 
-import static com.google.android.material.internal.ViewUtils.dpToPx;
-
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.content.ClipData;
-import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
-import android.graphics.Insets;
-import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Bundle;
-import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewTreeObserver;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
+import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.annotation.NonNull;
+
+import android.annotation.SuppressLint;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.OnApplyWindowInsetsListener;
 import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsAnimationCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bezlepkin.photoeditor.animator.FragmentHeightAnimator;
 import com.bezlepkin.photoeditor.base.BaseActivity;
-import com.bezlepkin.photoeditor.Constant;
 import com.bezlepkin.photoeditor.adapters.ColorPickerAdapter;
-import com.bezlepkin.photoeditor.helpers.InsetsWithKeyboardAnimationCallbackHelper;
-import com.bezlepkin.photoeditor.helpers.InsetsWithKeyboardCallbackHelper;
 import com.bezlepkin.photoeditorsdk.BrushDrawingView;
 import com.bezlepkin.photoeditorsdk.PhotoEditorSDK;
 import com.bezlepkin.photoeditorsdk.OnPhotoEditorSDKListener;
 import com.bezlepkin.photoeditorsdk.ViewType;
+import com.bezlepkin.photoeditor.databinding.ActivityPhotoEditorBinding;
+
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Objects;
 
 public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSDKListener {
     private ModeType activeMode;
@@ -58,8 +66,6 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     int textColor = Color.WHITE;
     int textColorIndex = 0;
     private String currentFilepath;
-    private ImageView imageView;
-    private RelativeLayout imageLayout;
     private ImageButton closeButton;
     private ImageButton cropButton;
     private ImageButton drawButton;
@@ -74,24 +80,29 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     private RecyclerView drawingViewColorPickerRecyclerView;
     // for draw
     private ArrayList<Integer> colorPickerColors;
-    private TextView doneDrawingTextView;
     private PhotoEditorSDK photoEditorSDK;
     private ActivityResultLauncher cropActivityForResult;
 
     private final static int CROPPER_REQUEST_CODE = 1;
     private final static String FILENAME_PREFIX = "photo_editor";
+    private ActivityPhotoEditorBinding binding;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_photo_editor);
+        // this line allows your application to draw under the system bars (status bar, nav bar)
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        binding = ActivityPhotoEditorBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
         Bundle extras = getIntent().getExtras();
-
         String filepath = extras.getString("imagePath");
+
         ArrayList<Integer> colors = extras.getIntegerArrayList("colors");
-        initImageView();
-        // buttons
+        if (colors == null) {
+            colors = new ArrayList<>();
+        }
+        // Buttons
         closeButton = findViewById(R.id.close_button);
         cropButton = findViewById(R.id.crop_button);
         drawButton = findViewById(R.id.draw_button);
@@ -99,11 +110,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         cancelButton = findViewById(R.id.cancel_button);
         applyButton = findViewById(R.id.apply_button);
         saveButton = findViewById(R.id.save_button);
-        // controls
+        // Controls
         actionControls = findViewById(R.id.action_controls_layout);
         modeControls = findViewById(R.id.mode_controls_layout);
         bottomControls = findViewById(R.id.bottom_controls_layout);
-        // drawing views
+        // Drawing views
         BrushDrawingView brushDrawingView = findViewById(R.id.drawing_view);
         drawingViewColorPickerRecyclerView = findViewById(R.id.drawing_view_color_picker_recycler_view);
 
@@ -113,7 +124,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         setImage(filepath);
         initColors(colors);
 
-        photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this).parentView(imageLayout).childView(imageView).deleteView(deleteRelativeLayout) // add the deleted view that will appear during the movement of the views
+
+        photoEditorSDK = new PhotoEditorSDK.PhotoEditorSDKBuilder(PhotoEditorActivity.this)
+                .parentView(binding.canvasLayout)
+                .childView(binding.imageView)
+                .deleteView(deleteRelativeLayout) // add the deleted view that will appear during the movement of the views
                 .brushDrawingView(brushDrawingView) // add the brush drawing view that is responsible for drawing on the image view
                 .buildPhotoEditorSDK(); // build photo editor sdk
 
@@ -143,8 +158,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         textButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                activeMode = ModeType.TEXT;
-                openAddTextPopupWindow("", textColor);
+                runTypingMode(textColor);
             }
         });
 
@@ -182,12 +196,13 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
             }
         });
 
-        onKeyboardShowListener(this);
+        setupViewListeners();
+        setupWindowInsetsListeners();
     }
+
 
     @Override
     public void onClick(View v) {
-
     }
 
     @Override
@@ -222,38 +237,11 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
     }
 
     @Override
-    public void onStopViewChangeListener(ViewType viewType) {
-
-    }
+    public void onStopViewChangeListener(ViewType viewType) {}
 
     @Override
     public void onPointerCaptureChanged(boolean hasCapture) {
         super.onPointerCaptureChanged(hasCapture);
-    }
-
-    public void onKeyboardShowListener(final Activity activity) {
-        Context context = getApplication().getApplicationContext();
-        final View view = this.findViewById(android.R.id.content);
-        view.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-            @SuppressLint("RestrictedApi")
-            @Override
-            public void onGlobalLayout() {
-                Rect rect = new Rect();
-                view.getWindowVisibleDisplayFrame(rect);
-                int rootHeight = view.getRootView().getHeight();
-                int diffHeight = rootHeight - rect.bottom;
-                DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-                float scale = metrics.density;
-                int height = (int) (diffHeight / scale);
-
-                if (diffHeight > rootHeight * 0.15) {
-                    Log.d("Keyboard", "Keyboard is open");
-                } else {
-                    Log.d("Keyboard", "Keyboard is closed");
-                }
-            }
-        });
-
     }
 
     @Override
@@ -261,7 +249,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         super.onActivityResult(requestCode, resultCode, data);
 
         if (resultCode == RESULT_OK && requestCode == CROPPER_REQUEST_CODE) {
-            String filepath = data.getExtras().getString("filepath");
+            String filepath = Objects.requireNonNull(data.getExtras()).getString("filepath");
             setCurrentFilepath(filepath);
             setImage(currentFilepath);
         }
@@ -275,12 +263,13 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
+
     private void setImage(String filepath) {
-        BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inSampleSize = 1;
-        Bitmap bitmap = BitmapFactory.decodeFile(filepath, options);
-        // imageView.setImageURI(Uri.fromFile(new File(filepath)));
-        imageView.setImageBitmap(bitmap);
+        Glide.with(this)
+                .load(new File(filepath))
+                .placeholder(binding.imageView.getDrawable())
+                .dontAnimate()
+                .into(binding.imageView);
     }
 
     private void beginCropping() {
@@ -298,8 +287,8 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
 
         if (drawingMode) {
             activeMode = ModeType.DRAW;
-            modeControls.setVisibility(View.GONE);
-            bottomControls.setVisibility(View.GONE);
+            modeControls.setVisibility(View.INVISIBLE);
+            bottomControls.setVisibility(View.INVISIBLE);
             setActionControlsVisibility(View.VISIBLE);
             drawingViewColorPickerRecyclerView.setVisibility(View.VISIBLE);
 
@@ -321,7 +310,7 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
             activeMode = null;
             modeControls.setVisibility(View.VISIBLE);
             bottomControls.setVisibility(View.VISIBLE);
-            setActionControlsVisibility(View.GONE);
+            setActionControlsVisibility(View.INVISIBLE);
             drawingViewColorPickerRecyclerView.setVisibility(View.GONE);
         }
     }
@@ -334,53 +323,29 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         actionControls.setVisibility(visibility);
     }
 
-    private void openAddTextPopupWindow(String text, Integer color) {
-
-        final TextAdditionalPopupWindow textAdditionalPopup = new TextAdditionalPopupWindow(
-                this,
-                (color != null) ? color : colorPickerColors.get(textColorIndex),
-                colorPickerColors
-        );
-
-        textAdditionalPopup.show();
-        InputMethodManager inputMethodManager = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        inputMethodManager.toggleSoftInput(InputMethodManager.SHOW_FORCED, 0);
-
-        textAdditionalPopup.setOnApplyClickListener(new TextAdditionalPopupWindow.OnApplyClickListener() {
-            @Override
-            public void onClick(String text, int color) {
-                saveAddedTextResult(text, color);
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(textAdditionalPopup.getContentView().getWindowToken(), 0);
-                textAdditionalPopup.dismiss();
-            }
-        });
-
-        textAdditionalPopup.setOnColorPickerClickListener(new TextAdditionalPopupWindow.OnColorPickerClickListener() {
-            @Override
-            public void onClick(int colorCode) {
-                textColorIndex = colorPickerColors.indexOf(colorCode);
-            }
-        });
-    }
-
     private void saveDrawingResult() {
         try {
             Uri tempFileUri = Uri.fromFile(File.createTempFile("photo_editor_", ".jpg", getCacheDir()));
-            String[] filepathArr = tempFileUri.getPath().split("/");
+            String[] filepathArr = Objects.requireNonNull(tempFileUri.getPath()).split("/");
             String filename = filepathArr[filepathArr.length - 1];
-            String filepath = photoEditorSDK.saveImage("", filename);
-            setCurrentFilepath(filepath);
-            setImage(filepath);
+            String savedFilePath = photoEditorSDK.saveImage("", filename);
+
+            if (savedFilePath == null || savedFilePath.isEmpty()) {
+                Log.e(TAG, "PhotoEditorSDK failed to save the image.");
+                return;
+            }
+
+            File savedFile = new File(savedFilePath);
+            if (!savedFile.exists()) {
+                Log.e(TAG, "File does not exist at the path returned by SDK: " + savedFilePath);
+                return;
+            }
+
+            setCurrentFilepath(savedFilePath);
+            setImage(savedFilePath);
         } catch (IOException e) {
             Log.e(TAG, "Error saving a drawing mode", e);
         }
-    }
-
-    private void saveAddedTextResult(String text, int colorCode) {
-        photoEditorSDK.addText(text, colorCode);
-        setEditMode(true);
-        // photoEditorSDK.clearAllViews();
     }
 
     private void saveResultWithReturn() {
@@ -400,28 +365,102 @@ public class PhotoEditorActivity extends BaseActivity implements OnPhotoEditorSD
         }
     }
 
-    private void initImageView() {
-        imageView = findViewById(R.id.image_view);
-        imageLayout = findViewById(R.id.image_layout);
-        final View parentView = findViewById(R.id.parent_layout);
+    protected void runTypingMode(Integer color) {
+        activeMode = ModeType.TEXT;
+        TextAdditionalFragment textAdditionalFragment = binding.textAdditionalFragment.getFragment();
+        textAdditionalFragment.setup(
+                this,
+                (color != null) ? color : colorPickerColors.get(textColorIndex),
+                colorPickerColors
+        );
 
-        final Window window = getWindow();
-        final InsetsWithKeyboardCallbackHelper insetsWithKeyboardCallbackHelper = new InsetsWithKeyboardCallbackHelper(window);
-        final WindowInsetsAnimationCompat.Callback insetsWithKeyboardAnimationCallbackHelper = new InsetsWithKeyboardAnimationCallbackHelper(parentView);
+        textAdditionalFragment.setOnApplyClickListener(new TextAdditionalFragment.OnApplyClickListener() {
+            @Override
+            public void onClick(String text, int color) {
+                saveTypingModeResult(text, color);
+            }
+        });
 
-        ViewCompat.setOnApplyWindowInsetsListener(parentView, insetsWithKeyboardCallbackHelper);
-        ViewCompat.setWindowInsetsAnimationCallback(parentView, insetsWithKeyboardAnimationCallbackHelper);
+        textAdditionalFragment.setOnColorPickerClickListener(new TextAdditionalFragment.OnColorPickerClickListener() {
+            @Override
+            public void onClick(int colorCode) {
+                textColorIndex = colorPickerColors.indexOf(colorCode);
+            }
+        });
+
+        View canvasContainer = binding.canvasContainerLayout;
+        View textAdditionalFragmentView = binding.textAdditionalFragment.getFragment().getView();
+
+        assert textAdditionalFragmentView != null;
+        textAdditionalFragmentView.setVisibility(View.VISIBLE);
+
+        ViewCompat.setWindowInsetsAnimationCallback(canvasContainer, new FragmentHeightAnimator(canvasContainer));
+        ViewCompat.setWindowInsetsAnimationCallback(textAdditionalFragmentView, new FragmentHeightAnimator(textAdditionalFragmentView));
+    }
+
+    private void saveTypingModeResult(String text, int colorCode) {
+        photoEditorSDK.addText(text, colorCode);
+        setEditMode(true);
+        // photoEditorSDK.clearAllViews();
     }
 
     protected void setEditMode(boolean isEditMode) {
         if (isEditMode) {
-            modeControls.setVisibility(View.GONE);
-            bottomControls.setVisibility(View.GONE);
+            modeControls.setVisibility(View.INVISIBLE);
+            bottomControls.setVisibility(View.INVISIBLE);
             setActionControlsVisibility(View.VISIBLE);
         } else {
             modeControls.setVisibility(View.VISIBLE);
             bottomControls.setVisibility(View.VISIBLE);
-            setActionControlsVisibility(View.GONE);
+            setActionControlsVisibility(View.INVISIBLE);
         }
+    }
+
+    private void setupViewListeners() {
+        binding.imageView.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+            @Override
+            public void onLayoutChange(View v, int left, int top, int right, int bottom, int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                int imageWidth = v.getWidth();
+                int imageHeight = v.getHeight();
+
+                ViewGroup.LayoutParams layoutParams = binding.drawingView.getLayoutParams();
+                layoutParams.width = imageWidth;
+                layoutParams.height = imageHeight;
+                binding.drawingView.setLayoutParams(layoutParams);
+            }
+        });
+    }
+
+    private void setupWindowInsetsListeners() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.getRoot(), new OnApplyWindowInsetsListener() {
+            @NonNull
+            @Override
+            public WindowInsetsCompat onApplyWindowInsets(@NonNull View view, @NonNull WindowInsetsCompat insets) {
+                Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+                binding.modeControlsLayout.setPadding(
+                        binding.modeControlsLayout.getPaddingLeft(),
+                        binding.modeControlsLayout.getPaddingTop() + systemBars.top,
+                        binding.modeControlsLayout.getPaddingRight(),
+                        binding.modeControlsLayout.getPaddingBottom()
+                );
+
+                binding.bottomControlsLayout.setPadding(
+                        binding.bottomControlsLayout.getPaddingLeft(),
+                        binding.bottomControlsLayout.getPaddingTop(),
+                        binding.bottomControlsLayout.getPaddingRight(),
+                        systemBars.bottom + 32
+                );
+
+                binding.canvasLayout.setPadding(
+                        binding.canvasLayout.getPaddingLeft(),
+                        binding.canvasLayout.getPaddingTop(),
+                        binding.canvasLayout.getPaddingRight(),
+                        0
+                );
+
+                return insets;
+            }
+        });
     }
 }

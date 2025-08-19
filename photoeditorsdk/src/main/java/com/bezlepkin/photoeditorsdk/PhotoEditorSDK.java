@@ -10,6 +10,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -37,11 +38,11 @@ public class PhotoEditorSDK implements MultiTouchListener.OnMultiTouchListener {
     private View addTextRootView;
 
     private PhotoEditorSDK(PhotoEditorSDKBuilder photoEditorSDKBuilder) {
-        this.context = photoEditorSDKBuilder.context;
-        this.parentView = photoEditorSDKBuilder.parentView;
-        this.imageView = photoEditorSDKBuilder.imageView;
-        this.deleteView = photoEditorSDKBuilder.deleteView;
-        this.brushDrawingView = photoEditorSDKBuilder.brushDrawingView;
+        context = photoEditorSDKBuilder.context;
+        parentView = photoEditorSDKBuilder.parentView;
+        imageView = photoEditorSDKBuilder.imageView;
+        deleteView = photoEditorSDKBuilder.deleteView;
+        brushDrawingView = photoEditorSDKBuilder.brushDrawingView;
         addedViews = new ArrayList<>();
     }
 

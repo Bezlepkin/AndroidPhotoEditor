@@ -12,6 +12,7 @@ import android.graphics.PorterDuffXfermode;
 //import android.support.annotation.ColorInt;
 //import android.support.annotation.NonNull;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -88,7 +89,7 @@ public class BrushDrawingView extends View {
             this.setVisibility(View.VISIBLE);
             refreshBrushDrawing();
         } else {
-            this.setVisibility(View.GONE);
+            this.setVisibility(View.INVISIBLE);
         }
 
         refreshBrushDrawing();
@@ -139,6 +140,7 @@ public class BrushDrawingView extends View {
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
+        if (w == 0 || h == 0) return;
         canvasBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         drawCanvas = new Canvas(canvasBitmap);
     }
