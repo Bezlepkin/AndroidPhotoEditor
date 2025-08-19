@@ -1,7 +1,7 @@
 # AndroidhotoEditor
 
 ## Overview
-AndroidPhotoEditor s a simple photo editor for Android. AndroidPhotoEditor allows users to cropping, drawing and typing. 
+Simple photo editor for Android. 
 
 ## Features
 - [x] Cropping
